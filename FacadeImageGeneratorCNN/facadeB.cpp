@@ -4,7 +4,7 @@
 const int NF = 4;
 const int NC = 4;
 
-cv::Mat generateFacadeB(int width, int height, const std::vector<float>& params) {
+cv::Mat generateFacadeB(int width, int height, int thickness, const std::vector<float>& params) {
 	float BS = (float)width / (params[5] * 2 + params[6] * NC) * params[5];
 	float TW = (float)width / (params[5] * 2 + params[6] * NC) * params[6];
 	float AH = (float)height / (params[7] + params[8] * NF + params[9]) * params[7];
@@ -17,7 +17,7 @@ cv::Mat generateFacadeB(int width, int height, const std::vector<float>& params)
 	float WT = FH / (params[1] + params[3] + params[4]) * params[3];
 	float WB = FH / (params[1] + params[3] + params[4]) * params[4];
 
-	return generateFacadeB(width, height, 1, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH, 0, false);
+	return generateFacadeB(width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH, 0, false);
 }
 
 cv::Mat generateFacadeB(int width, int height, int thickness, std::vector<float>& params, int window_displacement, bool noise, int edge_displacement, float window_prob, float edge_prob) {
