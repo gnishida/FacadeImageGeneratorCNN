@@ -100,7 +100,7 @@ cv::Mat generateFacadeD(int width, int height, int thickness, std::vector<float>
 	float DW = utils::uniform_rand(0.5, 4);
 
 	// １Fの各種幅をnormalize
-	ratio = TW * 2.0 / (DS * 2 + DW);
+	ratio = TW * NC / ND / (DS * 2 + DW);
 	DS *= ratio;
 	DW *= ratio;
 
