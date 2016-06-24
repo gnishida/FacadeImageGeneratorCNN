@@ -29,8 +29,8 @@ void MainWindow::onParameterEstimation() {
 }
 
 void MainWindow::generateTrainingImages() {
-	//const string DATA_ROOT = "C:\\Anaconda\\caffe\\facade\\data\\images\\";
-	const string DATA_ROOT = "C:/Anaconda/caffe/facade_regression/data/images/";
+	const string DATA_ROOT = "//Lucy/data/images/";
+	//const string DATA_ROOT = "C:/Anaconda/caffe/facade_regression/data/images/";
 	const int NUM_IMAGES_PER_SNIPPET = 10000;
 	const int IMAGE_SIZE = 128;
 	const bool GRAYSCALE = true;
@@ -63,8 +63,8 @@ void MainWindow::generateTrainingImages() {
 			}
 
 			std::vector<float> params;
-			//cv::Mat img = generateFacadeStructure(facade_grammar_id, IMAGE_SIZE, IMAGE_SIZE, params, false);
-			cv::Mat img = generateFacadeStructure(facade_grammar_id, IMAGE_SIZE, IMAGE_SIZE, params, 2, false, 0, 1, 1, 0.0, 0.0);
+			//cv::Mat img = generateFacadeStructure(facade_grammar_id, IMAGE_SIZE, IMAGE_SIZE, params, 0, false, 0, 1, 1, 0.0, 0.0);
+			cv::Mat img = generateFacadeStructure(facade_grammar_id, IMAGE_SIZE, IMAGE_SIZE, params, 2, false, 0, 0.9, 1, 0.0, 0.0);
 
 			if (GRAYSCALE) {
 				cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
@@ -89,22 +89,22 @@ void MainWindow::generateTrainingImages() {
 	printf("\n");
 }
 
-cv::Mat MainWindow::generateFacadeStructure(int facade_gramamr_id, int width, int height, std::vector<float>& params, int window_displacement, bool noise, int edge_displacement, float box_prob, float edge_prob, float noise_prob, float noise_length) {
+cv::Mat MainWindow::generateFacadeStructure(int facade_gramamr_id, int width, int height, std::vector<float>& params, int window_displacement, bool noise, int edge_displacement, float window_prob, float edge_prob, float noise_prob, float noise_length) {
 	int thickness = 1;
 	//int thickness = utils::uniform_rand(1, 4);
 
 	cv::Mat result;
 	if (facade_gramamr_id == 0) {
-		result = generateFacadeA(width, height, thickness, params, window_displacement, noise, edge_displacement, box_prob, edge_prob);
+		result = generateFacadeA(width, height, thickness, params, window_displacement, noise, edge_displacement, window_prob, edge_prob);
 	}
 	else if (facade_gramamr_id == 1) {
-		result = generateFacadeB(width, height, thickness, params, window_displacement, noise, edge_displacement, box_prob, edge_prob);
+		result = generateFacadeB(width, height, thickness, params, window_displacement, noise, edge_displacement, window_prob, edge_prob);
 	}
 	else if (facade_gramamr_id == 2) {
-		result = generateFacadeC(width, height, thickness, params, window_displacement, noise, edge_displacement, box_prob, edge_prob);
+		result = generateFacadeC(width, height, thickness, params, window_displacement, noise, edge_displacement, window_prob, edge_prob);
 	}
 	else if (facade_gramamr_id == 3) {
-		result = generateFacadeD(width, height, thickness, params, window_displacement, noise, edge_displacement, box_prob, edge_prob);
+		result = generateFacadeD(width, height, thickness, params, window_displacement, noise, edge_displacement, window_prob, edge_prob);
 	}
 
 
@@ -155,16 +155,16 @@ void MainWindow::parameterEstimation() {
 		std::vector<float> params;
 		cv::Mat img;
 		if (grammar_snippet_id == 0) {
-			img = generateFacadeA(256, 256, 1, params, 4, false);
+			img = generateFacadeA(256, 256, 1, params, 4, false, 0, 0.9);
 		}
 		else if (grammar_snippet_id == 1) {
-			img = generateFacadeB(256, 256, 1, params, 4, false);
+			img = generateFacadeB(256, 256, 1, params, 4, false, 0, 0.9);
 		}
 		else if (grammar_snippet_id == 2) {
-			img = generateFacadeC(256, 256, 1, params, 4, false);
+			img = generateFacadeC(256, 256, 1, params, 4, false, 0, 0.9);
 		}
 		else if (grammar_snippet_id == 3) {
-			img = generateFacadeD(256, 256, 1, params, 4, false);
+			img = generateFacadeD(256, 256, 1, params, 4, false, 0, 0.9);
 		}
 
 		// convert the image to grayscale with 128x128 size
@@ -217,6 +217,10 @@ void MainWindow::parameterEstimation() {
 				}
 			}
 		}
+
+		char filename2[256];
+		sprintf(filename2, "results/test_%02d.png", iter);
+		cv::imwrite(filename2, img);
 
 		char filename[256];
 		sprintf(filename, "results/result_%02d.png", iter);

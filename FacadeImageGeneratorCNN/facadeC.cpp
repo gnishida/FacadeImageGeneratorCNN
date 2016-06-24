@@ -158,11 +158,13 @@ cv::Mat generateFacadeC(int width, int height, int thickness, float WW, float WH
 			y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
 		}
 
-		if (!noise) {
-			cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
-		}
-		else if (utils::uniform_rand() < window_prob) {
-			utils::drawRectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), edge_prob, edge_displacement, cv::Scalar(0, 0, 0), thickness);
+		if (utils::uniform_rand() < window_prob) {
+			if (!noise) {
+				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
+			}
+			else {
+				utils::drawRectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), edge_prob, edge_displacement, cv::Scalar(0, 0, 0), thickness);
+			}
 		}
 	}
 
@@ -181,13 +183,14 @@ cv::Mat generateFacadeC(int width, int height, int thickness, float WW, float WH
 				y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
 			}
 
-			if (!noise) {
-				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
+			if (utils::uniform_rand() < window_prob) {
+				if (!noise) {
+					cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
+				}
+				else {
+					utils::drawRectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), edge_prob, edge_displacement, cv::Scalar(0, 0, 0), thickness);
+				}
 			}
-			else if (utils::uniform_rand() < window_prob) {
-				utils::drawRectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), edge_prob, edge_displacement, cv::Scalar(0, 0, 0), thickness);
-			}
-
 		}
 	}
 
