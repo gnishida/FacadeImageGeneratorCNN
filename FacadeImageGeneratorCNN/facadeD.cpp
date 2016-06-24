@@ -1,10 +1,10 @@
 ﻿#include "facadeD.h"
 #include "Utils.h"
 
-const int NF = 4;
-const int NC = 4;
-
 cv::Mat generateFacadeD(int width, int height, int thickness, const std::vector<float>& params) {
+	int NF = 4;
+	int NC = 4;
+
 	float BS = (float)width / (params[5] * 2 + params[6] * NC) * params[5];
 	float TW = (float)width / (params[5] * 2 + params[6] * NC) * params[6];
 	float AH = (float)height / (params[7] + params[8] * (NF - 1) + params[9]) * params[7];
@@ -27,7 +27,7 @@ cv::Mat generateFacadeD(int width, int height, int thickness, const std::vector<
 
 	std::cout << "params[13]: " << params[13] << ", params[14]: " << params[14] << ", DW: " << DW << ", DS: " << DS << std::endl;
 
-	return generateFacadeD(width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, ND, DT, DH, DW, DS, 0, false);
+	return generateFacadeD(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, ND, DT, DH, DW, DS, 0, false);
 }
 
 cv::Mat generateFacadeD(int width, int height, int thickness, std::vector<float>& params, int window_displacement, bool noise, int edge_displacement, float window_prob, float edge_prob) {
@@ -35,8 +35,8 @@ cv::Mat generateFacadeD(int width, int height, int thickness, std::vector<float>
 	// パラメータを設定
 	float ratio;
 
-	int NF = 4;
-	int NC = 4;
+	int NF = utils::uniform_rand(4, 11);
+	int NC = utils::uniform_rand(4, 11);
 
 	// 屋根の高さ
 	float AH = utils::uniform_rand(0, 0.5);
@@ -124,6 +124,8 @@ cv::Mat generateFacadeD(int width, int height, int thickness, std::vector<float>
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータ値を格納
+	params.push_back((float)NF / 10.0f);
+	params.push_back((float)NC / 10.0f);
 	params.push_back(WW / TW);
 	params.push_back(WH / FH);
 	params.push_back(WS / TW);
@@ -140,10 +142,10 @@ cv::Mat generateFacadeD(int width, int height, int thickness, std::vector<float>
 	params.push_back(DW / (DW + DS * 2));
 	params.push_back(DS / (DW + DS * 2));
 
-	return generateFacadeD(width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, ND, DT, DH, DW, DS, window_displacement, noise, edge_displacement, window_prob, edge_prob);
+	return generateFacadeD(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, ND, DT, DH, DW, DS, window_displacement, noise, edge_displacement, window_prob, edge_prob);
 }
 
-cv::Mat generateFacadeD(int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float BS, float TW, float AH, float FH, float GH, int ND, float DT, float DH, float DW, float DS, int window_displacement, bool noise, int edge_displacement, float window_prob, float edge_prob) {
+cv::Mat generateFacadeD(int NF, int NC, int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float BS, float TW, float AH, float FH, float GH, int ND, float DT, float DH, float DW, float DS, int window_displacement, bool noise, int edge_displacement, float window_prob, float edge_prob) {
 	cv::Mat result(height, width, CV_8UC3, cv::Scalar(255, 255, 255));
 
 	// １Fのドアを描画

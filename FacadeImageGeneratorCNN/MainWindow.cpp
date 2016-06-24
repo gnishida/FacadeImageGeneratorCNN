@@ -29,8 +29,8 @@ void MainWindow::onParameterEstimation() {
 }
 
 void MainWindow::generateTrainingImages() {
-	const string DATA_ROOT = "//Lucy/data/images/";
-	//const string DATA_ROOT = "C:/Anaconda/caffe/facade_regression/data/images/";
+	//const string DATA_ROOT = "//Lucy/caffe/facade/data/images/";
+	const string DATA_ROOT = "C:/Anaconda/caffe/facade_regression/data/images/";
 	const int NUM_IMAGES_PER_SNIPPET = 10000;
 	const int IMAGE_SIZE = 128;
 	const bool GRAYSCALE = true;
