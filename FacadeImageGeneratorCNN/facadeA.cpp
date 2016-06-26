@@ -2,25 +2,25 @@
 #include "Utils.h"
 
 cv::Mat generateFacadeA(int width, int height, int thickness, const std::vector<float>& params) {
-	int NF = 4;
-	int NC = 4;
+	int NF = params[0] * 6 + 0.5 + 4;
+	int NC = params[1] * 6 + 0.5 + 4;
 
-	float BS = (float)width / (params[5] * 2 + params[6] * NC) * params[5];
-	float TW = (float)width / (params[5] * 2 + params[6] * NC) * params[6];
-	float AH = (float)height / (params[7] + params[8] * NF + params[9]) * params[7];
-	float FH = (float)height / (params[7] + params[8] * NF + params[9]) * params[8];
-	float BH = (float)height / (params[7] + params[8] * NF + params[9]) * params[9];
+	float BS = (float)width / (params[7] * 2 + params[8] * NC) * params[7];
+	float TW = (float)width / (params[7] * 2 + params[8] * NC) * params[8];
+	float AH = (float)height / (params[9] + params[10] * NF + params[11]) * params[9];
+	float FH = (float)height / (params[9] + params[10] * NF + params[11]) * params[10];
+	float BH = (float)height / (params[9] + params[10] * NF + params[11]) * params[11];
 
-	float WW = TW / (params[0] + params[2] * 2) * params[0];
-	float WH = FH / (params[1] + params[3] + params[4]) * params[1];
-	float WS = TW / (params[0] + params[2] * 2) * params[2];
-	float WT = FH / (params[1] + params[3] + params[4]) * params[3];
-	float WB = FH / (params[1] + params[3] + params[4]) * params[4];
+	float WW = TW / (params[2] + params[4] * 2) * params[2];
+	float WH = FH / (params[3] + params[5] + params[6]) * params[3];
+	float WS = TW / (params[2] + params[4] * 2) * params[4];
+	float WT = FH / (params[3] + params[5] + params[6]) * params[5];
+	float WB = FH / (params[3] + params[5] + params[6]) * params[6];
 	
-	return generateFacadeA(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH, 0, false);
+	return generateFacadeA(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH);
 }
 
-cv::Mat generateFacadeA(int width, int height, int thickness, std::vector<float>& params, int window_displacement, bool noise, int edge_displacement, float window_prob, float edge_prob) {
+cv::Mat generateRandomFacadeA(int width, int height, int thickness, std::vector<float>& params, int window_displacement, float window_prob) {
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータを設定
 	float ratio;
@@ -98,10 +98,10 @@ cv::Mat generateFacadeA(int width, int height, int thickness, std::vector<float>
 	params.push_back(FH / height);
 	params.push_back(BH / height);
 
-	return generateFacadeA(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH, window_displacement, noise, edge_displacement, window_prob, edge_prob);
+	return generateFacadeA(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH, window_displacement, window_prob);
 }
 
-cv::Mat generateFacadeA(int NF, int NC, int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float BS, float TW, float AH, float FH, float BH, int window_displacement, bool noise, int edge_displacement, float window_prob, float edge_prob) {
+cv::Mat generateFacadeA(int NF, int NC, int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float BS, float TW, float AH, float FH, float BH, int window_displacement, float window_prob) {
 	cv::Mat result(height, width, CV_8UC3, cv::Scalar(255, 255, 255));
 
 	// 窓を描画
@@ -120,12 +120,7 @@ cv::Mat generateFacadeA(int NF, int NC, int width, int height, int thickness, fl
 			}
 
 			if (utils::uniform_rand() < window_prob) {
-				if (!noise) {
-					cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
-				}
-				else {
-					utils::drawRectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), edge_prob, edge_displacement, cv::Scalar(0, 0, 0), thickness);
-				}
+				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 			}
 		}
 	}

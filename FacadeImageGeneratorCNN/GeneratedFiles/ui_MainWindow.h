@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'MainWindow.ui'
 **
-** Created by: Qt User Interface Compiler version 5.6.0
+** Created by: Qt User Interface Compiler version 5.6.1
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -102,7 +102,7 @@ public:
 
     void retranslateUi(QMainWindow *MainWindowClass)
     {
-        MainWindowClass->setWindowTitle(QApplication::translate("MainWindowClass", "Photo to 3D", 0));
+        MainWindowClass->setWindowTitle(QApplication::translate("MainWindowClass", "Facade Image", 0));
         actionOpenImage->setText(QApplication::translate("MainWindowClass", "Open Image", 0));
         actionExit->setText(QApplication::translate("MainWindowClass", "Exit", 0));
         actionParameterEstimation->setText(QApplication::translate("MainWindowClass", "Parameter Estimation", 0));
