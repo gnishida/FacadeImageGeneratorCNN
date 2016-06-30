@@ -5,10 +5,16 @@
 #include "Regression.h"
 #include "Utils.h"
 #include "ImageGenerationDialog.h"
+#include "ParameterEstimationDialog.h"""
 #include "facadeA.h"
 #include "facadeB.h"
 #include "facadeC.h"
 #include "facadeD.h"
+#include <boost/algorithm/string.hpp>
+
+#ifndef SQR
+#define SQR(x)	((x) * (x))
+#endif
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 	ui.setupUi(this);
@@ -33,15 +39,14 @@ void MainWindow::generateTrainingImages() {
 	ImageGenerationDialog dlg;
 	if (!dlg.exec()) return;
 
-	//std::string DATA_ROOT = "//Lucy/caffe/facade/data/images/";
-	//const string DATA_ROOT = "C:/Anaconda/caffe/facade_regression/data/images/";
 	std::string DATA_ROOT = dlg.ui.lineEditOutputDirectory->text().toUtf8().constData();
-	//int NUM_IMAGES_PER_SNIPPET = 10000;
 	int NUM_IMAGES_PER_SNIPPET = dlg.ui.lineEditNumImages->text().toInt();
-	//int IMAGE_SIZE = 128;// 227;
 	int IMAGE_SIZE = dlg.ui.lineEditImageSize->text().toInt();
-	//const bool GRAYSCALE = true;// false;
 	bool GRAYSCALE = dlg.ui.checkBoxGrayscale->isChecked();
+	float EDGE_DISPLACEMENT = dlg.ui.lineEditEdgeDisplacement->text().toFloat();
+	float MISSING_WINDOWS = dlg.ui.lineEditMissingWindows->text().toFloat() * 0.01;
+	std::pair<int, int> range_NF = std::make_pair(dlg.ui.lineEditNumFloorsMin->text().toInt(), dlg.ui.lineEditNumFloorsMax->text().toInt());
+	std::pair<int, int> range_NC = std::make_pair(dlg.ui.lineEditNumColumnsMin->text().toInt(), dlg.ui.lineEditNumColumnsMax->text().toInt());
 
 	boost::filesystem::path dir(DATA_ROOT);
 	boost::filesystem::create_directory(dir);
@@ -71,15 +76,14 @@ void MainWindow::generateTrainingImages() {
 			}
 
 			std::vector<float> params;
-			//cv::Mat img = generateFacadeStructure(facade_grammar_id, IMAGE_SIZE, IMAGE_SIZE, params, 0, false, 0, 1, 1, 0.0, 0.0);
-			cv::Mat img = generateFacadeStructure(facade_grammar_id, IMAGE_SIZE, IMAGE_SIZE, params, 2, 0.9);
+			cv::Mat img = generateFacadeStructure(facade_grammar_id, IMAGE_SIZE, IMAGE_SIZE, range_NF, range_NC, params, EDGE_DISPLACEMENT, 1 - MISSING_WINDOWS);
 
 			if (GRAYSCALE) {
 				cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
 			}
 
 			///////////////////////////////////////////////////
-			// save the image to the fiel
+			// save the image to the file
 			char filename[256];
 			sprintf(filename, (std::string(dirname) + "%03d/%06d.png").c_str(), subdir_id, iter);
 			cv::imwrite(filename, img);
@@ -97,47 +101,79 @@ void MainWindow::generateTrainingImages() {
 	printf("\n");
 }
 
-cv::Mat MainWindow::generateFacadeStructure(int facade_gramamr_id, int width, int height, std::vector<float>& params, int window_displacement, float window_prob) {
+cv::Mat MainWindow::generateFacadeStructure(int facade_gramamr_id, int width, int height, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
 	int thickness = 1;
 	//int thickness = utils::uniform_rand(1, 4);
 
 	cv::Mat result;
 	if (facade_gramamr_id == 0) {
-		result = generateRandomFacadeA(width, height, thickness, params, window_displacement, window_prob);
+		result = generateRandomFacadeA(width, height, thickness, range_NF, range_NC, params, window_displacement, window_prob);
 	}
 	else if (facade_gramamr_id == 1) {
-		result = generateRandomFacadeB(width, height, thickness, params, window_displacement, window_prob);
+		result = generateRandomFacadeB(width, height, thickness, range_NF, range_NC, params, window_displacement, window_prob);
 	}
 	else if (facade_gramamr_id == 2) {
-		result = generateRandomFacadeC(width, height, thickness, params, window_displacement, window_prob);
+		result = generateRandomFacadeC(width, height, thickness, range_NF, range_NC, params, window_displacement, window_prob);
 	}
 	else if (facade_gramamr_id == 3) {
-		result = generateRandomFacadeD(width, height, thickness, params, window_displacement, window_prob);
+		result = generateRandomFacadeD(width, height, thickness, range_NF, range_NC, params, window_displacement, window_prob);
 	}
 
 	return result;
 }
 
 void MainWindow::parameterEstimation() {
+	ParameterEstimationDialog dlg;
+	if (!dlg.exec()) return;
+
 	boost::filesystem::path results_dir("results/");
 	boost::filesystem::create_directory(results_dir);
 
-	Classifier classifier("C:/Anaconda/caffe/facade/model/deploy.prototxt", "C:/Anaconda/caffe/facade/model/train_iter_40000.caffemodel", "C:/Anaconda/caffe/facade/data/mean.binaryproto");
+	std::pair<int, int> range_NF = std::make_pair(dlg.ui.lineEditNumFloorsMin->text().toInt(), dlg.ui.lineEditNumFloorsMax->text().toInt());
+	std::pair<int, int> range_NC = std::make_pair(dlg.ui.lineEditNumColumnsMin->text().toInt(), dlg.ui.lineEditNumColumnsMax->text().toInt());
+
+	Classifier classifier((dlg.ui.lineEditClassificationDirectory->text() + "/model/deploy.prototxt").toUtf8().constData(), (dlg.ui.lineEditClassificationDirectory->text() + "/model/train_iter_20000.caffemodel").toUtf8().constData(), (dlg.ui.lineEditClassificationDirectory->text() + "/data/mean.binaryproto").toUtf8().constData());
 	std::vector<Regression*> regressions(4);
 	for (int i = 0; i < 4; ++i) {
 		char deploy_name[256];
-		sprintf(deploy_name, "C:/Anaconda/caffe/facade_regression/model/deploy_%02d.prototxt", i + 1);
+		sprintf(deploy_name, (dlg.ui.lineEditRegressionDirectory->text() + "/model/deploy_%02d.prototxt").toUtf8().constData(), i + 1);
 		char model_name[256];
-		sprintf(model_name, "C:/Anaconda/caffe/facade_regression/model/train_%02d_iter_80000.caffemodel", i + 1);
+		sprintf(model_name, (dlg.ui.lineEditRegressionDirectory->text() + "/model/train_%02d_iter_80000.caffemodel").toUtf8().constData(), i + 1);
 		regressions[i] = new Regression(deploy_name, model_name);
 	}
 
 	int correct_classification = 0;
 	int incorrect_classification = 0;
 
-	std::ofstream out("predicted_params.txt");
+	// read the ground truth of parameter values
+	std::map<int, std::vector<std::vector<float>>> params_truth;
+	for (int i = 0; i < 4; ++i) {
+		params_truth[i] = std::vector<std::vector<float>>();
 
-	std::ifstream in("C:/Anaconda/caffe/facade/data/test.txt");
+		char file_path[256];
+		sprintf(file_path, (dlg.ui.lineEditTestDataDirectory->text() + "/images/%02d/parameters.txt").toUtf8().constData(), i + 1);
+		std::ifstream in_params(file_path);
+		while (true) {
+			std::string line;
+			std::getline(in_params, line);
+			if (line.empty()) break;
+
+			std::vector<std::string> strs;
+			boost::split(strs, line, boost::is_any_of(","));
+
+			std::vector<float> values;
+			for (int j = 0; j < strs.size(); ++j) {
+				values.push_back(stof(strs[j]));
+			}
+
+			params_truth[i].push_back(values);
+		}
+	}
+
+	std::map<int, std::vector<float>> rmse;
+	std::map<int, int> rmse_count;
+
+	std::ifstream in((dlg.ui.lineEditTestDataDirectory->text() + "/test.txt").toUtf8().constData());
 	int iter = 0;
 	while (true) {
 		std::string line;
@@ -148,17 +184,8 @@ void MainWindow::parameterEstimation() {
 		std::string file_path = line.substr(0, index);
 		int grammar_id = std::stoi(line.substr(index + 1));
 
-		cv::Mat img = cv::imread((std::string("C:/Anaconda/caffe/facade/data/images/") + file_path).c_str());
-		//std::cout << file_path.c_str() << std::endl;
-
-		// resize to 227x227
-		//cv::Mat img = img240(cv::Rect(6, 6, 227, 227)).clone();
-		/*
-		cv::Mat img1 = img256(cv::Rect(0, 15, 227, 227)).clone();
-		cv::Mat img2 = img256(cv::Rect(29, 15, 227, 227)).clone();
-		cv::Mat img3 = img256(cv::Rect(15, 0, 227, 227)).clone();
-		cv::Mat img4 = img256(cv::Rect(15, 29, 227, 227)).clone();
-		*/
+		// read the test image
+		cv::Mat img = cv::imread((std::string((dlg.ui.lineEditTestDataDirectory->text() + "/images/").toUtf8().constData()) + file_path).c_str());
 
 		// convert the image to grayscale with 128x128 size
 		cv::Mat grayImg;
@@ -166,184 +193,85 @@ void MainWindow::parameterEstimation() {
 		cv::resize(grayImg, grayImg, cv::Size(128, 128));
 		cv::threshold(grayImg, grayImg, 230, 255, cv::THRESH_BINARY);
 
+		// classification
 		std::vector<Prediction> predictions = classifier.Classify(img, 4);
-		/*
-		std::vector<Prediction> predictions1 = classifier.Classify(img1, 4);
-		std::vector<Prediction> predictions2 = classifier.Classify(img2, 4);
-		std::vector<Prediction> predictions3 = classifier.Classify(img3, 4);
-		std::vector<Prediction> predictions4 = classifier.Classify(img4, 4);
-		std::cout << "   Predicted grammar id: #" << predictions[0].first + 1 << std::endl;
-		std::cout << "                       : #" << predictions1[0].first + 1 << std::endl;
-		std::cout << "                       : #" << predictions2[0].first + 1 << std::endl;
-		std::cout << "                       : #" << predictions3[0].first + 1 << std::endl;
-		std::cout << "                       : #" << predictions4[0].first + 1 << std::endl;
-		*/
-
 		if (predictions[0].first == grammar_id) correct_classification++;
 		else incorrect_classification++;
 
-		std::vector<float> predicted_params = regressions[predictions[0].first]->Predict(grayImg);
-		for (int i = 0; i < predicted_params.size(); ++i) {
-			if (i > 0) out << ",";
-			out << predicted_params[i];
+		// parameter estimation
+		std::vector<float> predicted_params = regressions[grammar_id]->Predict(grayImg);
+
+		// obtain file id
+		int index1 = file_path.rfind("/");
+		int index2 = file_path.find(".", index1);
+		int file_id = stoi(file_path.substr(index1 + 1, index2 - index1 - 1));
+
+		// 誤差を計算
+		if (predictions[0].first == grammar_id) {
+			if (rmse[grammar_id].size() == 0) {
+				rmse[grammar_id].resize(predicted_params.size(), 0);
+				rmse_count[grammar_id] = 0;
+			}
+
+			for (int i = 0; i < predicted_params.size(); ++i) {
+				rmse[grammar_id][i] += SQR(params_truth[grammar_id][file_id][i] - predicted_params[i]);
+			}
+			rmse_count[grammar_id]++;
 		}
-		out << std::endl;
 
 		// predictされた画像を作成する
 		cv::Mat predicted_img;
 		if (predictions[0].first == 0) {
-			predicted_img = generateFacadeA(227, 227, 2, predicted_params);
+			predicted_img = generateFacadeA(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 		}
 		else if (predictions[0].first == 1) {
-			predicted_img = generateFacadeB(227, 227, 2, predicted_params);
+			predicted_img = generateFacadeB(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 		}
 		else if (predictions[0].first == 2) {
-			predicted_img = generateFacadeC(227, 227, 2, predicted_params);
+			predicted_img = generateFacadeC(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 		}
 		else if (predictions[0].first == 3) {
-			predicted_img = generateFacadeD(227, 227, 2, predicted_params);
+			predicted_img = generateFacadeD(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 		}
 
-		// blend the original image and the predicted one
-		cv::Mat result(img.size(), CV_8UC3, cv::Scalar(255, 255, 255));
+		// make the predicted image blue
 		for (int r = 0; r < predicted_img.rows; ++r) {
 			for (int c = 0; c < predicted_img.cols; ++c) {
-				cv::Vec3b orig_color = img.at<cv::Vec3b>(r, c);
-				cv::Vec3b pred_color = predicted_img.at<cv::Vec3b>(r, c);
-				if (pred_color[0] == 0) {
-					result.at<cv::Vec3b>(r, c) = cv::Vec3b(255, 0, 0);
-				}
-				else if (orig_color[0] == 0) {
-					result.at<cv::Vec3b>(r, c) = cv::Vec3b(0, 0, 0);
+				cv::Vec3b color = predicted_img.at<cv::Vec3b>(r, c);
+				if (color[0] == 0) {
+					predicted_img.at<cv::Vec3b>(r, c) = cv::Vec3b(255, 0, 0);
 				}
 				else {
-					result.at<cv::Vec3b>(r, c) = cv::Vec3b(255, 255, 255);
+					predicted_img.at<cv::Vec3b>(r, c) = cv::Vec3b(255, 255, 255);
 				}
 			}
 		}
 
 		char filename2[256];
-		sprintf(filename2, "results/test_%02d.png", iter);
+		sprintf(filename2, (dlg.ui.lineEditOutputDirectory->text() + "/%02d_%06d_input.png").toUtf8().constData(), grammar_id, iter);
 		cv::imwrite(filename2, img);
 
 		char filename[256];
-		sprintf(filename, "results/result_%02d.png", iter);
-		cv::imwrite(filename, result);
+		sprintf(filename, (dlg.ui.lineEditOutputDirectory->text() + "/%02d_%06d_pred.png").toUtf8().constData(), grammar_id, iter);
+		cv::imwrite(filename, predicted_img);
 
 		iter++;
-
-		//if (iter == 20) break;
 	}
 
 	std::cout << "--------------------------------------------------" << std::endl;
-	std::cout << "Prediction results:" << std::endl;
 	std::cout << "Classification accuracy: " << (float)correct_classification / (correct_classification + incorrect_classification) << std::endl;
 	std::cout << std::endl;
-}
 
-#if 0
-void MainWindow::parameterEstimation() {
-	const int N_TESTDATA = 200;
-
-	boost::filesystem::path results_dir("results/");
-	boost::filesystem::create_directory(results_dir);
-
-	Classifier classifier("C:/Anaconda/caffe/facade/model/deploy.prototxt", "C:/Anaconda/caffe/facade/model/train_iter_40000.caffemodel", "C:/Anaconda/caffe/facade/data/mean.binaryproto");
-	std::vector<Regression*> regressions(4);
+	// 誤差を計算
+	std::cout << "--------------------------------------------------" << std::endl;
+	std::cout << "Parameter estimation RMSE:" << std::endl;
 	for (int i = 0; i < 4; ++i) {
-		char deploy_name[256];
-		sprintf(deploy_name, "C:/Anaconda/caffe/facade_regression/model/deploy_%02d.prototxt", i + 1);
-		char model_name[256];
-		sprintf(model_name, "C:/Anaconda/caffe/facade_regression/model/train_%02d_iter_80000.caffemodel", i + 1);
-		regressions[i] = new Regression(deploy_name, model_name);
+		for (int j = 0; j < rmse[i].size(); ++j) {
+			if (j > 0) std::cout << ", ";
+			rmse[i][j] =  sqrt(rmse[i][j] / rmse_count[i]);
+			std::cout << rmse[i][j];
+		}
+		std::cout << std::endl;
 	}
-	
-	int correct_classification = 0;
-	int incorrect_classification = 0;
-
-	std::ofstream out("predicted_params.txt");
-	for (int iter = 0; iter < N_TESTDATA; ++iter) {
-		// テスト画像を作成する
-		int grammar_snippet_id = utils::uniform_rand(0, 4);
-		std::vector<float> params;
-		cv::Mat img;
-		if (grammar_snippet_id == 0) {
-			img = generateRandomFacadeA(256, 256, 1, params, 2, 0.9);
-		}
-		else if (grammar_snippet_id == 1) {
-			img = generateRandomFacadeB(256, 256, 1, params, 2, 0.9);
-		}
-		else if (grammar_snippet_id == 2) {
-			img = generateRandomFacadeC(256, 256, 1, params, 2, 0.9);
-		}
-		else if (grammar_snippet_id == 3) {
-			img = generateRandomFacadeD(256, 256, 1, params, 2, 0.9);
-		}
-
-		// convert the image to grayscale with 128x128 size
-		cv::Mat grayImg;
-		cv::cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
-		cv::resize(grayImg, grayImg, cv::Size(128, 128));
-		cv::threshold(grayImg, grayImg, 230, 255, cv::THRESH_BINARY);
-
-		std::vector<Prediction> predictions = classifier.Classify(img, 4);
-		//std::cout << "Predicted grammar id: #" << predictions[0].first + 1 << std::endl;
-		if (predictions[0].first == grammar_snippet_id) correct_classification++;
-		else incorrect_classification++;
-
-		std::vector<float> predicted_params = regressions[predictions[0].first]->Predict(grayImg);
-		for (int i = 0; i < predicted_params.size(); ++i) {
-			if (i > 0) out << ",";
-			out << predicted_params[i];
-		}
-		out << std::endl;
-
-		// predictされた画像を作成する
-		cv::Mat predicted_img;
-		if (predictions[0].first == 0) {
-			predicted_img = generateFacadeA(256, 256, 2, predicted_params);
-		}
-		else if (predictions[0].first == 1) {
-			predicted_img = generateFacadeB(256, 256, 2, predicted_params);
-		}
-		else if (predictions[0].first == 2) {
-			predicted_img = generateFacadeC(256, 256, 2, predicted_params);
-		}
-		else if (predictions[0].first == 3) {
-			predicted_img = generateFacadeD(256, 256, 2, predicted_params);
-		}
-
-		// blend the original image and the predicted one
-		cv::Mat result(img.size(), CV_8UC3, cv::Scalar(255, 255, 255));
-		for (int r = 0; r < predicted_img.rows; ++r) {
-			for (int c = 0; c < predicted_img.cols; ++c) {
-				cv::Vec3b orig_color = img.at<cv::Vec3b>(r, c);
-				cv::Vec3b pred_color = predicted_img.at<cv::Vec3b>(r, c);
-				if (pred_color[0] == 0) {
-					result.at<cv::Vec3b>(r, c) = cv::Vec3b(255, 0, 0);
-				}
-				else if (orig_color[0] == 0) {
-					result.at<cv::Vec3b>(r, c) = cv::Vec3b(0, 0, 0);
-				}
-				else {
-					result.at<cv::Vec3b>(r, c) = cv::Vec3b(255, 255, 255);
-				}
-			}
-		}
-
-		char filename2[256];
-		sprintf(filename2, "results/test_%02d.png", iter);
-		cv::imwrite(filename2, img);
-
-		char filename[256];
-		sprintf(filename, "results/result_%02d.png", iter);
-		cv::imwrite(filename, result);
-	}
-
-	std::cout << "--------------------------------------------------" << std::endl;
-	std::cout << "Prediction results:" << std::endl;
-	std::cout << "Classification accuracy: " << (float)correct_classification / (correct_classification + incorrect_classification) << std::endl;
-	std::cout << std::endl;
 }
 
-#endif

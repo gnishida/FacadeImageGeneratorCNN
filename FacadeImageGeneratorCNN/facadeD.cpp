@@ -1,9 +1,9 @@
 ﻿#include "facadeD.h"
 #include "Utils.h"
 
-cv::Mat generateFacadeD(int width, int height, int thickness, const std::vector<float>& params) {
-	int NF = params[0] * 6 + 0.5 + 4;
-	int NC = params[1] * 6 + 0.5 + 4;
+cv::Mat generateFacadeD(int width, int height, int thickness, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, const std::vector<float>& params) {
+	int NF = params[0] * (range_NF.second - range_NF.first) + 0.5 + range_NF.first;
+	int NC = params[1] * (range_NC.second - range_NC.first) + 0.5 + range_NC.first;
 
 	float BS = (float)width / (params[7] * 2 + params[8] * NC) * params[7];
 	float TW = (float)width / (params[7] * 2 + params[8] * NC) * params[8];
@@ -17,9 +17,13 @@ cv::Mat generateFacadeD(int width, int height, int thickness, const std::vector<
 	float WT = FH / (params[3] + params[5] + params[6]) * params[5];
 	float WB = FH / (params[3] + params[5] + params[6]) * params[6];
 
-	int ND = params[12] * 2 + 1 + 0.5;
+	// １Fのドアの数 [1, NC*0.8]
+	int max_ND = NC * 0.8f;
+
+	int ND = params[12] * (max_ND - 1) + 1 + 0.5;
 	if (ND == 0) ND = 1;
-	if (ND > 3) ND = 3;
+	if (ND > max_ND) ND = max_ND;
+
 	float DT = GH / (params[13] + params[14]) * params[13];
 	float DH = GH / (params[13] + params[14]) * params[14];
 	float DW = TW * NC / ND / (params[15] + params[16] * 2) * params[15];
@@ -28,13 +32,13 @@ cv::Mat generateFacadeD(int width, int height, int thickness, const std::vector<
 	return generateFacadeD(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, ND, DT, DH, DW, DS);
 }
 
-cv::Mat generateRandomFacadeD(int width, int height, int thickness, std::vector<float>& params, int window_displacement, float window_prob) {
+cv::Mat generateRandomFacadeD(int width, int height, int thickness, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータを設定
 	float ratio;
 
-	int NF = utils::uniform_rand(4, 11);
-	int NC = utils::uniform_rand(4, 11);
+	int NF = utils::uniform_rand(range_NF.first, range_NF.second + 1);
+	int NC = utils::uniform_rand(range_NC.first, range_NC.second + 1);
 
 	// 屋根の高さ
 	float AH = utils::uniform_rand(0, 0.5);
@@ -88,8 +92,9 @@ cv::Mat generateRandomFacadeD(int width, int height, int thickness, std::vector<
 	DT *= ratio;
 	DH *= ratio;
 
-	// １Fのドアの数（1 - 3）
-	int ND = utils::uniform_rand(1, 4);
+	// １Fのドアの数 [1, NC*0.8]
+	int max_ND = NC * 0.8f;
+	int ND = utils::uniform_rand(1, max_ND + 1);
 
 	// １Fのドアの横マージン
 	float DS = utils::uniform_rand(0.2, 1);
@@ -122,8 +127,8 @@ cv::Mat generateRandomFacadeD(int width, int height, int thickness, std::vector<
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータ値を格納
-	params.push_back((float)NF / 10.0f);
-	params.push_back((float)NC / 10.0f);
+	params.push_back((float)(NF - range_NF.first) / (float)(range_NF.second - range_NF.first));
+	params.push_back((float)(NC - range_NC.first) / (float)(range_NC.second - range_NC.first));
 	params.push_back(WW / TW);
 	params.push_back(WH / FH);
 	params.push_back(WS / TW);
@@ -134,7 +139,7 @@ cv::Mat generateRandomFacadeD(int width, int height, int thickness, std::vector<
 	params.push_back(AH / height);
 	params.push_back(FH / height);
 	params.push_back(GH / height);
-	params.push_back((float)(ND - 1) / 2.0f);
+	params.push_back((float)(ND - 1) / (float)(max_ND - 1));
 	params.push_back(DT / GH);
 	params.push_back(DH / GH);
 	params.push_back(DW / (DW + DS * 2));

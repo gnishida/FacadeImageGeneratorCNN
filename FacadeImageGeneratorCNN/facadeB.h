@@ -3,6 +3,6 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
-cv::Mat generateFacadeB(int width, int height, int thickness, const std::vector<float>& params);
-cv::Mat generateRandomFacadeB(int width, int height, int thickness, std::vector<float>& params, int window_displacement = 0, float window_prob = 1);
+cv::Mat generateFacadeB(int width, int height, int thickness, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, const std::vector<float>& params);
+cv::Mat generateRandomFacadeB(int width, int height, int thickness, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, std::vector<float>& params, int window_displacement = 0, float window_prob = 1);
 cv::Mat generateFacadeB(int NF, int NC, int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float BS, float TW, float AH, float FH, float BH, int window_displacement = 0, float window_prob = 1);

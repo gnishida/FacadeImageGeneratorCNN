@@ -1,9 +1,9 @@
 ﻿#include "facadeA.h"
 #include "Utils.h"
 
-cv::Mat generateFacadeA(int width, int height, int thickness, const std::vector<float>& params) {
-	int NF = params[0] * 6 + 0.5 + 4;
-	int NC = params[1] * 6 + 0.5 + 4;
+cv::Mat generateFacadeA(int width, int height, int thickness, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, const std::vector<float>& params) {
+	int NF = params[0] * (range_NF.second - range_NF.first) + 0.5 + range_NF.first;
+	int NC = params[1] * (range_NC.second - range_NC.first) + 0.5 + range_NC.first;
 
 	float BS = (float)width / (params[7] * 2 + params[8] * NC) * params[7];
 	float TW = (float)width / (params[7] * 2 + params[8] * NC) * params[8];
@@ -20,13 +20,13 @@ cv::Mat generateFacadeA(int width, int height, int thickness, const std::vector<
 	return generateFacadeA(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH);
 }
 
-cv::Mat generateRandomFacadeA(int width, int height, int thickness, std::vector<float>& params, int window_displacement, float window_prob) {
+cv::Mat generateRandomFacadeA(int width, int height, int thickness, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータを設定
 	float ratio;
 
-	int NF = utils::uniform_rand(4, 11);
-	int NC = utils::uniform_rand(4, 11);
+	int NF = utils::uniform_rand(range_NF.first, range_NF.second + 1);
+	int NC = utils::uniform_rand(range_NC.first, range_NC.second + 1);
 
 	// ベースの高さ
 	float BH = utils::uniform_rand(0, 0.5);
@@ -85,8 +85,8 @@ cv::Mat generateRandomFacadeA(int width, int height, int thickness, std::vector<
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータ値を格納
-	params.push_back((float)NF / 10.0f);
-	params.push_back((float)NC / 10.0f);
+	params.push_back((float)(NF - range_NF.first) / (float)(range_NF.second - range_NF.first));
+	params.push_back((float)(NC - range_NC.first) / (float)(range_NC.second - range_NC.first));
 	params.push_back(WW / TW);
 	params.push_back(WH / FH);
 	params.push_back(WS / TW);

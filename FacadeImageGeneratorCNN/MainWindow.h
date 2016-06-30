@@ -15,7 +15,7 @@ public:
 	MainWindow(QWidget *parent = 0);
 
 	void generateTrainingImages();
-	cv::Mat generateFacadeStructure(int facade_gramamr_id, int width, int height, std::vector<float>& params, int window_displacement, float window_prob = 1);
+	cv::Mat generateFacadeStructure(int facade_gramamr_id, int width, int height, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, std::vector<float>& params, int window_displacement, float window_prob = 1);
 	void parameterEstimation();
 
 public slots:

@@ -13,9 +13,10 @@ public:
 	~ParameterEstimationDialog();
 
 public slots:
-	void onAutomaticRecognition();
-	void onTryMultiples();
-	void onRefinement();
+	void onTestDataDirectory();
+	void onClassificationDirectory();
+	void onRegressionDirectory();
+	void onOutputDirectory();
 	void onOK();
 	void onCancel();
 
